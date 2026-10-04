@@ -11,17 +11,15 @@ import {
   Phone,
   ArrowRight,
   CheckCircle2,
-  AlertCircle,
-  ShieldCheck,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 
 function SignUpContent() {
   const router = useRouter();
-  const { signup } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,24 +27,29 @@ function SignUpContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'student' | 'admin'>('student');
-  const [adminKey, setAdminKey] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
 
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!name.trim()) {
       setError('Please enter your full name.');
       return;
     }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+
+    // Strict Email Format Regex Check
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setError('Please enter a valid email address (e.g. name@domain.com).');
       return;
     }
+
     if (!phone.trim() || phone.length < 10) {
       setError('Please enter a valid phone number (e.g. 0319-8647809).');
       return;
@@ -64,25 +67,46 @@ function SignUpContent() {
       return;
     }
 
-    // If choosing admin role, optionally check a passcode or grant admin
-    signup(name, email, phone, role);
-    setSuccess(true);
-    setTimeout(() => {
-      if (role === 'admin') {
-        router.push('/admin');
+    try {
+      setLoading(true);
+
+      // 1. Firebase account create karega
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // 2. Verification email bhejega
+      await sendEmailVerification(userCredential.user);
+
+      // 3. Force Sign Out untill verified
+      await signOut(auth);
+
+      setSuccess('Account created! Verification email has been sent. Please check your inbox OR Spam Folder and verify before logging in.');
+      
+      setName('');
+      setEmail('');
+      setPhone('');
+      setPassword('');
+      setConfirmPassword('');
+
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address format.');
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError('This email is already registered.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.');
       } else {
-        router.push('/');
+        setError(err.message || 'Failed to register account.');
       }
-    }, 700);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-lg mx-auto">
       <div className="bg-[#13131e] border border-[#2a2a3a] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        {/* Ambient Top Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-[#43e97b]/20 blur-3xl pointer-events-none" />
 
-        {/* Header */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#6c63ff] via-[#818cf8] to-[#43e97b] p-0.5 mx-auto mb-3 shadow-lg shadow-[#6c63ff]/20">
             <div className="w-full h-full bg-[#111118] rounded-[14px] flex items-center justify-center">
@@ -97,15 +121,13 @@ function SignUpContent() {
           </p>
         </div>
 
-        {/* Success Alert */}
         {success && (
           <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>Account created successfully! Redirecting...</span>
+            <span>{success}</span>
           </div>
         )}
 
-        {/* Error Alert */}
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -113,7 +135,6 @@ function SignUpContent() {
           </div>
         )}
 
-        {/* Role Tab */}
         <div className="flex justify-center mb-5">
           <div className="p-1 bg-[#1a1a26] rounded-xl border border-[#2a2a3a] inline-flex">
             <button
@@ -125,7 +146,6 @@ function SignUpContent() {
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="block text-xs font-medium text-[#888899] mb-1">
@@ -232,14 +252,14 @@ function SignUpContent() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white font-bold text-sm transition-all shadow-xl shadow-[#6c63ff]/30 hover:shadow-[#6c63ff]/50 cursor-pointer flex items-center justify-center gap-2 mt-3"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white font-bold text-sm transition-all shadow-xl shadow-[#6c63ff]/30 hover:shadow-[#6c63ff]/50 cursor-pointer flex items-center justify-center gap-2 mt-3 disabled:opacity-50"
           >
-            <span>Complete Registration & Sign Up</span>
+            <span>{loading ? 'Processing Registration...' : 'Complete Registration & Sign Up'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="mt-6 text-center text-xs text-[#888899]">
           Already registered?{' '}
           <Link href="/login" className="text-[#818cf8] font-semibold hover:underline">

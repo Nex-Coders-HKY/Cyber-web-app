@@ -8,45 +8,40 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  ShieldCheck,
-  User,
-  SlidersHorizontal,
   CheckCircle2,
-  AlertCircle,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
-import { text } from 'stream/consumers';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/';
 
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'student' | 'admin'>('student');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError(null);
 
     const trimmedIdentifier = email.trim();
 
     if (!trimmedIdentifier) {
-      setError('Please enter your email or username.');
+      setError('Please enter your email.');
       return;
     }
 
     if (role === 'admin') {
-      // Strictly validate Admin credentials:
-      // Username: 'Zayan' OR 'cybernova@gmail.com'
-      // Password: 'admin123'
       const isValidAdminUser =
         trimmedIdentifier === 'Zayan' ||
         trimmedIdentifier.toLowerCase() === 'cybernova@gmail.com';
@@ -57,34 +52,51 @@ function LoginContent() {
         return;
       }
 
-      // Valid admin
       login('admin@cybernova.edu.pk', 'admin', 'Academy Admin');
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin');
       }, 600);
     } else {
-      // Student Login Flow
-      if (!password || password.length < 4) {
-        setError('Password must be at least 4 characters.');
-        return;
-      }
+      // Student Login Flow with Firebase Email Verification Check
+      try {
+        setLoading(true);
 
-      login(email, role);
-      setSuccess(true);
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 600);
+        const userCredential = await signInWithEmailAndPassword(auth, trimmedIdentifier, password);
+        const user = userCredential.user;
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+          await signOut(auth); // Access block karo
+          setError('Your email is not verified yet! Please check your inbox/spam folder and click the verification link.');
+          return;
+        }
+
+        login(user.email || trimmedIdentifier, 'student');
+        setSuccess(true);
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 600);
+
+      } catch (err: any) {
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+          setError('Invalid email or password.');
+        } else if (err.code === 'auth/invalid-email') {
+          setError('Please enter a valid email address format.');
+        } else {
+          setError(err.message || 'Login failed.');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-md mx-auto">
       <div className="bg-[#13131e] border border-[#2a2a3a] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        {/* Ambient Top Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-[#6c63ff]/20 blur-3xl pointer-events-none" />
 
-        {/* Icon & Title */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#6c63ff] via-[#818cf8] to-[#43e97b] p-0.5 mx-auto mb-3 shadow-lg shadow-[#6c63ff]/20">
             <div className="w-full h-full bg-[#111118] rounded-[14px] flex items-center justify-center">
@@ -99,7 +111,6 @@ function LoginContent() {
           </p>
         </div>
 
-        {/* Success Alert */}
         {success && (
           <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -107,7 +118,6 @@ function LoginContent() {
           </div>
         )}
 
-        {/* Error Alert */}
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -115,7 +125,6 @@ function LoginContent() {
           </div>
         )}
 
-        {/* Role Selector Tabs */}
         <div className="grid grid-cols-2 gap-2 p-1 bg-[#1a1a26] rounded-xl border border-[#2a2a3a] mb-5">
           <button
             type="button"
@@ -139,18 +148,17 @@ function LoginContent() {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-[#888899] mb-1.5">
-              Email Address / Username
+              Email Address
             </label>
             <div className="relative">
               <input
-                type="text"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === 'admin' ? 'Enter admin username or Email' : 'Enter your email or username'}
+                placeholder={role === 'admin' ? 'Enter admin username or Email' : 'Enter your email address'}
                 required
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff] transition-colors"
               />
@@ -185,14 +193,14 @@ function LoginContent() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white font-bold text-sm transition-all shadow-xl shadow-[#6c63ff]/30 hover:shadow-[#6c63ff]/50 cursor-pointer flex items-center justify-center gap-2 mt-2"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white font-bold text-sm transition-all shadow-xl shadow-[#6c63ff]/30 hover:shadow-[#6c63ff]/50 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
           >
-            <span>{role === 'admin' ? 'Log In as Administrator' : 'Log In to Student Portal'}</span>
+            <span>{loading ? 'Logging in...' : role === 'admin' ? 'Log In as Administrator' : 'Log In to Student Portal'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Signup Link */}
         <div className="mt-6 text-center text-xs text-[#888899]">
           Don't have an account?{' '}
           <Link href="/signup" className="text-[#818cf8] font-semibold hover:underline">
