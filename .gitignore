@@ -7,3 +7,4 @@ coverage/
 !.env.example
 .next/
 node_modules/
+fire-base-credentials.txt
