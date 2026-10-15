@@ -1,38 +1,49 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import './globals.css';
-import { Providers } from '../components/Providers';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import CookieBanner from "@/components/CookieBanner";
+import StickyMobileCTA from "@/components/StickyMobileCTA";
+import Script from "next/script";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Cyber Nova Computer Academy — Coding & IT Institute',
-  description: "Pakistan's premier coding institute. Learn Python, C++, Web Development, Shopify, Graphic Designing with AI, and Crypto & Forex from expert instructors — in-person & hands-on classes.",
-  keywords: ['Cyber Nova', 'Computer Academy', 'Karachi', 'Coding Classes', 'Web Development', 'Python', 'Shopify', 'Certificate Verification'],
+  title: "Cyber Nova Academy | Professional Web Development Courses",
+  description: "Learn full-stack web development, DSA, and modern frameworks with expert instructors.",
   openGraph: {
-    title: 'Cyber Nova Computer Academy',
-    description: "Pakistan's premier coding institute. Admissions Open — Batch 2026.",
-    type: 'website',
+    title: "Cyber Nova Academy",
+    description: "Learn full-stack web development with expert instructors.",
+    images: ["/og-image.jpg"],
+    type: "website",
+  },
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap"
-          rel="stylesheet"
+      <body className={inter.className}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"
+          strategy="afterInteractive"
         />
-      </head>
-      <body className="bg-[#0a0a0f] text-[#e8e8f0] antialiased selection:bg-[#6c63ff] selection:text-white">
-        <Providers>
-          {children}
-        </Providers>
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XXXXXXXXXX');
+          `}
+        </Script>
+        {children}
+        <CookieBanner />
+        <StickyMobileCTA />
       </body>
     </html>
   );
