@@ -12,7 +12,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
@@ -41,34 +42,33 @@ function LoginContent() {
       return;
     }
 
-    if (role === 'admin') {
-      const isValidAdminUser =
-        trimmedIdentifier === 'Zayan' ||
-        trimmedIdentifier.toLowerCase() === 'cybernova@gmail.com';
-      const isValidAdminPass = password === 'admin123';
+    try {
+      setLoading(true);
 
-      if (!isValidAdminUser || !isValidAdminPass) {
-        setError('Invalid Admin credentials. Please check your username and password.');
-        return;
-      }
+      // 1. Firebase Authentication se login karo
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedIdentifier, password);
+      const user = userCredential.user;
 
-      login('admin@cybernova.edu.pk', 'admin', 'Academy Admin');
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/admin');
-      }, 600);
-    } else {
-      // Student Login Flow with Firebase Email Verification Check
-      try {
-        setLoading(true);
+  if (role === 'admin') {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
+          await signOut(auth);
+          setError('Access denied. This account does not have administrator privileges.');
+          return;
+        }
 
-        const userCredential = await signInWithEmailAndPassword(auth, trimmedIdentifier, password);
-        const user = userCredential.user;
-
-        // Check if email is verified
+        login(user.email || trimmedIdentifier, 'admin', 'Academy Admin');
+        setSuccess(true);
+        setTimeout(() => {
+          router.push('/admin');
+        }, 600);
+      } else {
+        // Student Login Flow
         if (!user.emailVerified) {
-          await signOut(auth); // Access block karo
-          setError('Your email is not verified yet! Please check your inbox/spam folder and click the verification link.');
+          await signOut(auth);
+          setError('Your email is not verified yet! Please check your inbox/spam folder.');
           return;
         }
 
@@ -77,18 +77,18 @@ function LoginContent() {
         setTimeout(() => {
           router.push(redirectPath);
         }, 600);
-
-      } catch (err: any) {
-        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-          setError('Invalid email or password.');
-        } else if (err.code === 'auth/invalid-email') {
-          setError('Please enter a valid email address format.');
-        } else {
-          setError(err.message || 'Login failed.');
-        }
-      } finally {
-        setLoading(false);
       }
+
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address format.');
+      } else {
+        setError(err.message || 'Login failed.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -158,7 +158,7 @@ function LoginContent() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === 'admin' ? 'Enter admin username or Email' : 'Enter your email address'}
+                placeholder="Enter your email address"
                 required
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff] transition-colors"
               />

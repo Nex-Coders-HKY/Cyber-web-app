@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from 'firebase/firestore';
 
-// Aapki Firebase Project Config details
 const firebaseConfig = {
   apiKey: "AIzaSyCxtu92OASIcBNHxjcm8Z15v1spWUCa2VA",
   authDomain: "cyber-nova-web-app.firebaseapp.com",
@@ -12,8 +12,6 @@ const firebaseConfig = {
   measurementId: "G-91GSGQFK7M"
 };
 
-// Fast-refresh handling for Next.js
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-
-// Yahan se auth export ho raha hai
 export const auth = getAuth(app);
+export const db = getFirestore(app);
