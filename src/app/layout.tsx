@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
+import { AuthProvider } from "@/context/AuthContext";
+import { CoursesProvider } from "@/context/CoursesContext";
 import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -41,7 +43,11 @@ export default function RootLayout({
             gtag('config', 'G-XXXXXXXXXX');
           `}
         </Script>
-        {children}
+        <AuthProvider>
+          <CoursesProvider>
+            {children}
+          </CoursesProvider>
+        </AuthProvider>
         <CookieBanner />
         <StickyMobileCTA />
       </body>
