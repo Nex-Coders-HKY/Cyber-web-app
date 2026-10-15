@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     name?: string,
     phone?: string
   ) => {
-    // If email is an admin email or explicitly chosen role is admin
+
     const isAdminUser = role === 'admin' || email.toLowerCase().includes('admin');
     const newUser: User = {
       id: `usr_${Date.now()}`,
@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: isAdminUser ? 'admin' : 'student'
     };
     setUser(newUser);
+    localStorage.setItem("auth_timestamp", Date.now().toString());
     try {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
     } catch (e) {
@@ -88,6 +89,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error(e);
     }
   };
+  useEffect(() => {
+  const loginTime = localStorage.getItem("auth_timestamp");
+  if (loginTime) {
+    const currentTime = Date.now();
+    const twoDaysInMillis = 2 * 24 * 60 * 60 * 1000;
+    
+    if (currentTime - parseInt(loginTime, 10) > twoDaysInMillis) {
+      logout();
+      localStorage.removeItem("auth_timestamp");
+    }
+  }
+}, []);
 
   return (
     <AuthContext.Provider

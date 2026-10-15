@@ -113,12 +113,12 @@ export const Footer: React.FC = () => {
         {/* Bottom Sub-footer */}
         <div className="pt-8 border-t border-[#2a2a3a] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#888899]">
           <p>© 2026 Cyber Nova Computer Academy. All rights reserved.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link>
             <Link href="/payment" className="hover:text-white transition-colors">Fee Payment</Link>
             <Link href="/verify" className="hover:text-white transition-colors">Certificate Verification</Link>
-            <span className="text-[#2a2a3a]">|</span>
-            <span>Batch 2026 Enrolment</span>
           </div>
         </div>
       </div>

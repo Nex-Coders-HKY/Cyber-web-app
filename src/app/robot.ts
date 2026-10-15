@@ -1,12 +1,12 @@
-import { MetadataRoute } from "next";
+import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/private/", "/thank-you"],
+      userAgent: '*',
+      allow: '/',
+      disallow: ['/admin/', '/private/'],
     },
-    sitemap: "https://www.cybernova.edu.pk/sitemap.xml",
+    sitemap: 'https://cybernova.edu.pk/sitemap.xml',
   };
 }
