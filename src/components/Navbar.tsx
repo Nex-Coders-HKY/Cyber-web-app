@@ -204,13 +204,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Log In</span>
               </Link>
-              <Link
-                href="/signup"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a1a26] hover:bg-[#252538] text-white border border-[#2a2a3a] hover:border-[#6c63ff]/50 text-xs sm:text-sm font-medium transition-all"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-[#6c63ff]" />
-                <span>Sign Up</span>
-              </Link>
             </div>
           )}
 
