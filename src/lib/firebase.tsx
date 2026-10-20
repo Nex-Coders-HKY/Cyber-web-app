@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCxtu92OASIcBNHxjcm8Z15v1spWUCa2VA",
-  authDomain: "cyber-nova-web-app.firebaseapp.com",
-  projectId: "cyber-nova-web-app",
-  storageBucket: "cyber-nova-web-app.firebasestorage.app",
-  messagingSenderId: "1013837713302",
-  appId: "1:1013837713302:web:73a17fb67350bcffc117b7",
-  measurementId: "G-91GSGQFK7M"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
