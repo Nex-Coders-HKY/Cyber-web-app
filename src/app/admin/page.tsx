@@ -27,8 +27,14 @@ import {
   Check,
   Phone,
   Mail,
-  UserCheck
+  UserCheck,
+  UserPlus,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
+// Firebase Imports for Admin Student Creation
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 import { useCourses } from '../../context/CoursesContext';
 import { useAuth } from '../../context/AuthContext';
 import { Course } from '../../types';
@@ -44,9 +50,18 @@ function AdminContent() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Search & Filter
+  // Search & Filter Tabs
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'courses' | 'registrations'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'registrations' | 'create-student'>('courses');
+
+  // New Student Form State
+  const [studentName, setStudentName] = useState('');
+  const [studentEmail, setStudentEmail] = useState('');
+  const [studentPhone, setStudentPhone] = useState('');
+  const [studentPassword, setStudentPassword] = useState('');
+  const [creatingStudent, setCreatingStudent] = useState(false);
+  const [studentSuccessMsg, setStudentSuccessMsg] = useState<string | null>(null);
+  const [studentErrorMsg, setStudentErrorMsg] = useState<string | null>(null);
 
   // Course Editing Modal State
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -99,6 +114,49 @@ function AdminContent() {
       setAuthError('Invalid Admin Credentials. Please enter valid username and password.');
     }
   };
+
+  // Create Student Handler (Admin Only)
+  const handleCreateStudent = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setStudentSuccessMsg(null);
+  setStudentErrorMsg(null);
+
+  if (!studentEmail.trim()) {
+    setStudentErrorMsg('Please enter a valid student email/ID.');
+    return;
+  }
+  if (!studentPassword || studentPassword.length < 6) {
+    setStudentErrorMsg('Password must be at least 6 characters.');
+    return;
+  }
+
+  try {
+    setCreatingStudent(true);
+
+    // 1. Direct Firebase Auth me student account create karo (No Verification Needed)
+    await createUserWithEmailAndPassword(auth, studentEmail, studentPassword);
+
+    setStudentSuccessMsg(`Student Account Created Successfully!\nEmail ID: ${studentEmail}\nPassword: ${studentPassword}`);
+    showToast('Student registered in Firebase!');
+
+    // Reset Form
+    setStudentName('');
+    setStudentEmail('');
+    setStudentPhone('');
+    setStudentPassword('');
+
+  } catch (err: any) {
+    if (err.code === 'auth/email-already-in-use') {
+      setStudentErrorMsg('This email ID is already registered in Firebase.');
+    } else if (err.code === 'auth/invalid-email') {
+      setStudentErrorMsg('Invalid email format. Use e.g. student123@cybernova.com');
+    } else {
+      setStudentErrorMsg(err.message || 'Failed to create student account.');
+    }
+  } finally {
+    setCreatingStudent(false);
+  }
+};
 
   const handleEditClick = (course: Course) => {
     setEditingCourse(course);
@@ -196,7 +254,6 @@ function AdminContent() {
   const totalFeeSum = courses.reduce((acc, c) => acc + c.fee, 0);
   const avgFee = Math.round(totalFeeSum / (courses.length || 1));
 
-  // If not logged in as Admin, show Passcode / Login screen
   if (!isAdmin) {
     return (
       <div className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-md mx-auto">
@@ -219,7 +276,6 @@ function AdminContent() {
           )}
 
           <form onSubmit={handleAdminUnlock} className="space-y-3 mb-6">
-            {/* Username Input */}
             <div className="relative">
               <input
                 type="text"
@@ -232,7 +288,6 @@ function AdminContent() {
               <Users className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
 
-            {/* Password Input */}
             <div className="relative">
               <input
                 type="password"
@@ -268,7 +323,6 @@ function AdminContent() {
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#13131e] border border-[#6c63ff] text-white text-xs sm:text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-[#02fd88]" />
@@ -284,7 +338,7 @@ function AdminContent() {
             <span>Cyber Nova Management Portal</span>
           </div>
           <h1 className="font-syne text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-            Courses & Price Management
+            Courses & Student Management
           </h1>
           <p className="text-xs sm:text-sm text-[#888899] mt-1">
             Logged in as <strong className="text-white">{user?.name || 'Administrator'}</strong> ({user?.email})
@@ -363,8 +417,8 @@ function AdminContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center justify-between border-b border-[#2a2a3a] mb-6">
-        <div className="flex items-center gap-6">
+      <div className="flex items-center justify-between border-b border-[#2a2a3a] mb-6 overflow-x-auto">
+        <div className="flex items-center gap-6 shrink-0">
           <button
             onClick={() => setActiveTab('courses')}
             className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === 'courses' ? 'text-white' : 'text-[#888899] hover:text-white'
@@ -386,6 +440,19 @@ function AdminContent() {
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6c63ff]" />
             )}
           </button>
+
+          {/* NEW TAB: CREATE STUDENT ACCOUNT */}
+          <button
+            onClick={() => setActiveTab('create-student')}
+            className={`pb-3 text-sm font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${activeTab === 'create-student' ? 'text-white' : 'text-[#888899] hover:text-white'
+              }`}
+          >
+            <UserPlus className="w-4 h-4 text-[#43e97b]" />
+            <span>Create Student Account</span>
+            {activeTab === 'create-student' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#43e97b]" />
+            )}
+          </button>
         </div>
 
         {activeTab === 'courses' && (
@@ -402,127 +469,115 @@ function AdminContent() {
         )}
       </div>
 
-      {/* TAB 1: COURSES & PRICE MANAGEMENT */}
+      {/* TAB 1: COURSES CATALOG */}
       {activeTab === 'courses' && (
-        <div>
-          {/* Table Container for Desktop, Cards for Mobile */}
-          <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#2a2a3a] bg-[#171724] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
-                    <th className="py-4 px-4 sm:px-6">Course Name</th>
-                    <th className="py-4 px-4">Category</th>
-                    <th className="py-4 px-4">Duration & Schedule</th>
-                    <th className="py-4 px-4">Current Fee (PKR)</th>
-                    <th className="py-4 px-4">Badge</th>
-                    <th className="py-4 px-4 sm:px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#2a2a3a]/60 text-xs sm:text-sm">
-                  {filteredCourses.map((course) => (
-                    <tr key={course.id} className="hover:bg-[#181827] transition-colors">
-                      {/* Name & ID */}
-                      <td className="py-4 px-4 sm:px-6">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: `${course.accentColor}25`, color: course.accentColor }}
-                          >
-                            <BookOpen className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="font-syne font-bold text-white text-sm sm:text-base">
-                              {course.name}
-                            </div>
-                            <div className="text-[11px] text-[#888899] line-clamp-1 max-w-xs">
-                              {course.description}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <span
-                          className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${course.accentColor}20`, color: course.accentColor }}
+        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#2a2a3a] bg-[#171724] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
+                  <th className="py-4 px-4 sm:px-6">Course Name</th>
+                  <th className="py-4 px-4">Category</th>
+                  <th className="py-4 px-4">Duration & Schedule</th>
+                  <th className="py-4 px-4">Current Fee (PKR)</th>
+                  <th className="py-4 px-4">Badge</th>
+                  <th className="py-4 px-4 sm:px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a3a]/60 text-xs sm:text-sm">
+                {filteredCourses.map((course) => (
+                  <tr key={course.id} className="hover:bg-[#181827] transition-colors">
+                    <td className="py-4 px-4 sm:px-6">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${course.accentColor}25`, color: course.accentColor }}
                         >
-                          {course.categoryTag}
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-syne font-bold text-white text-sm sm:text-base">
+                            {course.name}
+                          </div>
+                          <div className="text-[11px] text-[#888899] line-clamp-1 max-w-xs">
+                            {course.description}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span
+                        className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${course.accentColor}20`, color: course.accentColor }}
+                      >
+                        {course.categoryTag}
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-4 whitespace-nowrap text-[#888899]">
+                      <div>{course.duration}</div>
+                      <div className="text-[11px] text-slate-500">{course.classesPerWeek}</div>
+                    </td>
+
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-syne font-extrabold text-[#02fd88] text-base">
+                          Rs. {course.fee.toLocaleString()}
                         </span>
-                      </td>
-
-                      {/* Duration */}
-                      <td className="py-4 px-4 whitespace-nowrap text-[#888899]">
-                        <div>{course.duration}</div>
-                        <div className="text-[11px] text-slate-500">{course.classesPerWeek}</div>
-                      </td>
-
-                      {/* Course Fee with Quick Inline Update */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="font-syne font-extrabold text-white text-base text-[#02fd88]">
-                            Rs. {course.fee.toLocaleString()}
-                          </span>
-                          <button
-                            onClick={() => {
-                              const newFeeStr = prompt(`Update fee for ${course.name}:`, course.fee.toString());
-                              if (newFeeStr) {
-                                const parsed = parseInt(newFeeStr.replace(/[^0-9]/g, ''), 10);
-                                if (!isNaN(parsed) && parsed > 0) {
-                                  updateCourseFee(course.id, parsed);
-                                  showToast(`Fee for ${course.name} updated to Rs. ${parsed.toLocaleString()}!`);
-                                }
+                        <button
+                          onClick={() => {
+                            const newFeeStr = prompt(`Update fee for ${course.name}:`, course.fee.toString());
+                            if (newFeeStr) {
+                              const parsed = parseInt(newFeeStr.replace(/[^0-9]/g, ''), 10);
+                              if (!isNaN(parsed) && parsed > 0) {
+                                updateCourseFee(course.id, parsed);
+                                showToast(`Fee for ${course.name} updated to Rs. ${parsed.toLocaleString()}!`);
                               }
-                            }}
-                            className="text-[10px] px-2 py-0.5 rounded bg-[#1a1a26] hover:bg-[#252538] text-[#818cf8] border border-[#2a2a3a] cursor-pointer"
-                            title="Quick price change"
-                          >
-                            Edit Rs
-                          </button>
-                        </div>
-                      </td>
+                            }
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded bg-[#1a1a26] hover:bg-[#252538] text-[#818cf8] border border-[#2a2a3a] cursor-pointer"
+                        >
+                          Edit Rs
+                        </button>
+                      </div>
+                    </td>
 
-                      {/* Badge */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {course.badge ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#6c63ff]/20 text-[#818cf8] border border-[#6c63ff]/30">
-                            {course.badge}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-[#888899]">—</span>
-                        )}
-                      </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {course.badge ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#6c63ff]/20 text-[#818cf8] border border-[#6c63ff]/30">
+                          {course.badge}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-[#888899]">—</span>
+                      )}
+                    </td>
 
-                      {/* Actions */}
-                      <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleEditClick(course)}
-                            className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-white border border-[#2a2a3a] transition-colors cursor-pointer"
-                            title="Edit Course Details"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-[#818cf8]" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(course.id, course.name)}
-                            className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#ff6584]/20 text-[#ff6584] border border-[#2a2a3a] transition-colors cursor-pointer"
-                            title="Delete Course"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditClick(course)}
+                          className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-white border border-[#2a2a3a] transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-[#818cf8]" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(course.id, course.name)}
+                          className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#ff6584]/20 text-[#ff6584] border border-[#2a2a3a] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* TAB 2: STUDENT REGISTRATIONS */}
+      {/* TAB 2: STUDENT SUBMISSIONS */}
       {activeTab === 'registrations' && (
         <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 shadow-xl">
           {registrations.length === 0 ? (
@@ -576,6 +631,120 @@ function AdminContent() {
         </div>
       )}
 
+      {/* TAB 3: CREATE STUDENT ACCOUNT (NEW) */}
+      {activeTab === 'create-student' && (
+        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-xl mx-auto shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2a2a3a]">
+            <div className="w-10 h-10 rounded-xl bg-[#43e97b]/15 text-[#43e97b] flex items-center justify-center shrink-0">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-syne text-xl font-bold text-white">Issue Student Credentials</h2>
+              <p className="text-xs text-[#888899]">
+                Create student account directly. Email verification link will be sent automatically.
+              </p>
+            </div>
+          </div>
+
+          {studentSuccessMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{studentSuccessMsg}</span>
+            </div>
+          )}
+
+          {studentErrorMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{studentErrorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateStudent} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#888899] mb-1">
+                Student Full Name
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="e.g. Muhammad Hassan"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#43e97b]"
+                />
+                <UserCheck className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#888899] mb-1">
+                  Official Email Address *
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={studentEmail}
+                    onChange={(e) => setStudentEmail(e.target.value)}
+                    placeholder="student@example.com"
+                    required
+                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
+                  />
+                  <Mail className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#888899] mb-1">
+                  Phone / WhatsApp
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={studentPhone}
+                    onChange={(e) => setStudentPhone(e.target.value)}
+                    placeholder="0319-XXXXXXX"
+                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
+                  />
+                  <Phone className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#888899] mb-1">
+                Assign Initial Password *
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={studentPassword}
+                  onChange={(e) => setStudentPassword(e.target.value)}
+                  placeholder="e.g. Student123#"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm font-mono focus:outline-none focus:border-[#43e97b]"
+                />
+                <Lock className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+              <p className="text-[11px] text-[#888899] mt-1">
+                Provide this password to student. Student will verify email link before first login.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={creatingStudent}
+              className="w-full py-3 rounded-xl bg-[#43e97b] hover:bg-[#32d86a] text-black font-bold text-sm transition-all shadow-xl shadow-[#43e97b]/20 cursor-pointer flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>{creatingStudent ? 'Creating Account...' : 'Register Student & Send Verification Link'}</span>
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* EDIT / CREATE COURSE MODAL */}
       {(editingCourse || isAddingNew) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
@@ -585,9 +754,6 @@ function AdminContent() {
                 <h3 className="font-syne text-xl font-bold text-white">
                   {isAddingNew ? 'Add New Course' : `Edit: ${editingCourse?.name}`}
                 </h3>
-                <p className="text-xs text-[#888899]">
-                  Changes are persisted and instantly update the public curriculum and payment fees.
-                </p>
               </div>
               <button
                 type="button"
@@ -644,82 +810,6 @@ function AdminContent() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.duration || ''}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="e.g. 2 Months"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Classes Per Week
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.classesPerWeek || ''}
-                    onChange={(e) => setFormData({ ...formData, classesPerWeek: e.target.value })}
-                    placeholder="e.g. 3 Days / Week"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Badge / Tag (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.badge || ''}
-                    onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                    placeholder="e.g. Most Popular"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Accent Color Hex
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={formData.accentColor || '#6c63ff'}
-                      onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
-                      className="w-10 h-10 rounded-xl bg-transparent cursor-pointer border border-[#2a2a3a]"
-                    />
-                    <input
-                      type="text"
-                      value={formData.accentColor || '#6c63ff'}
-                      onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white font-mono text-xs focus:outline-none focus:border-[#6c63ff]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  placeholder="Summary of skills and career outcomes..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2a2a3a]">

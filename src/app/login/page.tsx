@@ -32,65 +32,60 @@ function LoginContent() {
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    const trimmedIdentifier = email.trim();
+  const trimmedIdentifier = email.trim();
 
-    if (!trimmedIdentifier) {
-      setError('Please enter your email.');
+  if (!trimmedIdentifier) {
+    setError('Please enter your email ID.');
+    return;
+  }
+
+  if (role === 'admin') {
+    // Admin Login Logic
+    const isValidAdminUser =
+      trimmedIdentifier === 'Zayan' ||
+      trimmedIdentifier.toLowerCase() === 'cybernova@gmail.com';
+    const isValidAdminPass = password === 'admin123';
+
+    if (!isValidAdminUser || !isValidAdminPass) {
+      setError('Invalid Admin credentials.');
       return;
     }
 
+    login('admin@cybernova.edu.pk', 'admin', 'Academy Admin');
+    setSuccess(true);
+    setTimeout(() => router.push('/admin'), 600);
+
+  } else {
+    // Student Login via Firebase Auth (Direct Check)
     try {
       setLoading(true);
 
-      // 1. Firebase Authentication se login karo
+      // Direct Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(auth, trimmedIdentifier, password);
       const user = userCredential.user;
 
-  if (role === 'admin') {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
-          await signOut(auth);
-          setError('Access denied. This account does not have administrator privileges.');
-          return;
-        }
+      // Login Context update karke direct Student Portal par redirect
+      login(user.email || trimmedIdentifier, 'student');
+      setSuccess(true);
 
-        login(user.email || trimmedIdentifier, 'admin', 'Academy Admin');
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/admin');
-        }, 600);
-      } else {
-        // Student Login Flow
-        if (!user.emailVerified) {
-          await signOut(auth);
-          setError('Your email is not verified yet! Please check your inbox/spam folder.');
-          return;
-        }
-
-        login(user.email || trimmedIdentifier, 'student');
-        setSuccess(true);
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 600);
-      }
+      setTimeout(() => {
+        router.push(redirectPath || '/'); // Direct Access
+      }, 600);
 
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Invalid email or password.');
-      } else if (err.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address format.');
+        setError('Invalid Student Email or Password.');
       } else {
-        setError(err.message || 'Login failed.');
+        setError('Login failed: ' + err.message);
       }
     } finally {
       setLoading(false);
     }
-  };
+  }
+};
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-md mx-auto">
