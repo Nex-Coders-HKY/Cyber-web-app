@@ -117,46 +117,46 @@ function AdminContent() {
 
   // Create Student Handler (Admin Only)
   const handleCreateStudent = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setStudentSuccessMsg(null);
-  setStudentErrorMsg(null);
+    e.preventDefault();
+    setStudentSuccessMsg(null);
+    setStudentErrorMsg(null);
 
-  if (!studentEmail.trim()) {
-    setStudentErrorMsg('Please enter a valid student email/ID.');
-    return;
-  }
-  if (!studentPassword || studentPassword.length < 6) {
-    setStudentErrorMsg('Password must be at least 6 characters.');
-    return;
-  }
-
-  try {
-    setCreatingStudent(true);
-
-    // 1. Direct Firebase Auth me student account create karo (No Verification Needed)
-    await createUserWithEmailAndPassword(auth, studentEmail, studentPassword);
-
-    setStudentSuccessMsg(`Student Account Created Successfully!\nEmail ID: ${studentEmail}\nPassword: ${studentPassword}`);
-    showToast('Student registered in Firebase!');
-
-    // Reset Form
-    setStudentName('');
-    setStudentEmail('');
-    setStudentPhone('');
-    setStudentPassword('');
-
-  } catch (err: any) {
-    if (err.code === 'auth/email-already-in-use') {
-      setStudentErrorMsg('This email ID is already registered in Firebase.');
-    } else if (err.code === 'auth/invalid-email') {
-      setStudentErrorMsg('Invalid email format. Use e.g. student123@cybernova.com');
-    } else {
-      setStudentErrorMsg(err.message || 'Failed to create student account.');
+    if (!studentEmail.trim()) {
+      setStudentErrorMsg('Please enter a valid student email/ID.');
+      return;
     }
-  } finally {
-    setCreatingStudent(false);
-  }
-};
+    if (!studentPassword || studentPassword.length < 6) {
+      setStudentErrorMsg('Password must be at least 6 characters.');
+      return;
+    }
+
+    try {
+      setCreatingStudent(true);
+
+      // 1. Direct Firebase Auth me student account create karo (No Verification Needed)
+      await createUserWithEmailAndPassword(auth, studentEmail, studentPassword);
+
+      setStudentSuccessMsg(`Student Account Created Successfully!\nEmail ID: ${studentEmail}\nPassword: ${studentPassword}`);
+      showToast('Student registered in Firebase!');
+
+      // Reset Form
+      setStudentName('');
+      setStudentEmail('');
+      setStudentPhone('');
+      setStudentPassword('');
+
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setStudentErrorMsg('This email ID is already registered in Firebase.');
+      } else if (err.code === 'auth/invalid-email') {
+        setStudentErrorMsg('Invalid email format. Use e.g. student123@cybernova.com');
+      } else {
+        setStudentErrorMsg(err.message || 'Failed to create student account.');
+      }
+    } finally {
+      setCreatingStudent(false);
+    }
+  };
 
   const handleEditClick = (course: Course) => {
     setEditingCourse(course);
@@ -344,498 +344,505 @@ function AdminContent() {
             Logged in as <strong className="text-white">{user?.name || 'Administrator'}</strong> ({user?.email})
           </p>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={handleAddNewClick}
+          className="py-2.5 px-4 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-[#6c63ff]/25 transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add New Course</span>
+        </button>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleAddNewClick}
-            className="py-2.5 px-4 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-[#6c63ff]/25 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Course</span>
-          </button>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="py-2.5 px-3.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] border border-[#2a2a3a] text-[#888899] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          title="Reset courses to initial defaults"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Reset Defaults</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={handleReset}
-            className="py-2.5 px-3.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] border border-[#2a2a3a] text-[#888899] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Reset courses to initial defaults"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Reset Defaults</span>
-          </button>
-
-          <Link
-            href="/"
-            className="py-2.5 px-3.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] border border-[#2a2a3a] text-[#888899] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>View Site</span>
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="py-2.5 px-3.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] border border-[#2a2a3a] text-[#888899] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>View Site</span>
+        </Link>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Active Courses</span>
-            <BookOpen className="w-4 h-4 text-[#6c63ff]" />
-          </div>
-          <div className="font-syne text-2xl sm:text-3xl font-black text-white">{courses.length}</div>
-          <span className="text-[11px] text-[#02fd88] font-medium">Published on site</span>
-        </div>
-
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Average Fee</span>
-            <DollarSign className="w-4 h-4 text-[#02fd88]" />
-          </div>
-          <div className="font-syne text-2xl sm:text-3xl font-black text-white">Rs. {avgFee.toLocaleString()}</div>
-          <span className="text-[11px] text-[#888899]">Per full course</span>
-        </div>
-
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Student Enrolments</span>
-            <Users className="w-4 h-4 text-[#818cf8]" />
-          </div>
-          <div className="font-syne text-2xl sm:text-3xl font-black text-white">{registrations.length}</div>
-          <span className="text-[11px] text-[#818cf8]">Form submissions</span>
-        </div>
-
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Pipeline Volume</span>
-            <TrendingUp className="w-4 h-4 text-[#f59e0b]" />
-          </div>
-          <div className="font-syne text-2xl sm:text-3xl font-black text-[#02fd88]">
-            Rs. {registrations.reduce((acc, r) => acc + (Number(r.fee) || 0), 0).toLocaleString()}
-          </div>
-          <span className="text-[11px] text-[#888899]">Total tuition logged</span>
-        </div>
+      {/* Metrics Cards */ }
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Active Courses</span>
+        <BookOpen className="w-4 h-4 text-[#6c63ff]" />
       </div>
+      <div className="font-syne text-2xl sm:text-3xl font-black text-white">{courses.length}</div>
+      <span className="text-[11px] text-[#02fd88] font-medium">Published on site</span>
+    </div>
 
-      {/* Tabs */}
-      <div className="flex items-center justify-between border-b border-[#2a2a3a] mb-6 overflow-x-auto">
-        <div className="flex items-center gap-6 shrink-0">
-          <button
-            onClick={() => setActiveTab('courses')}
-            className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === 'courses' ? 'text-white' : 'text-[#888899] hover:text-white'
-              }`}
-          >
-            <span>Courses Catalog ({courses.length})</span>
-            {activeTab === 'courses' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6c63ff]" />
-            )}
-          </button>
+    <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Average Fee</span>
+        <DollarSign className="w-4 h-4 text-[#02fd88]" />
+      </div>
+      <div className="font-syne text-2xl sm:text-3xl font-black text-white">Rs. {avgFee.toLocaleString()}</div>
+      <span className="text-[11px] text-[#888899]">Per full course</span>
+    </div>
 
-          <button
-            onClick={() => setActiveTab('registrations')}
-            className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === 'registrations' ? 'text-white' : 'text-[#888899] hover:text-white'
-              }`}
-          >
-            <span>Student Submissions ({registrations.length})</span>
-            {activeTab === 'registrations' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6c63ff]" />
-            )}
-          </button>
+    <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Student Enrolments</span>
+        <Users className="w-4 h-4 text-[#818cf8]" />
+      </div>
+      <div className="font-syne text-2xl sm:text-3xl font-black text-white">{registrations.length}</div>
+      <span className="text-[11px] text-[#818cf8]">Form submissions</span>
+    </div>
 
-          {/* NEW TAB: CREATE STUDENT ACCOUNT */}
-          <button
-            onClick={() => setActiveTab('create-student')}
-            className={`pb-3 text-sm font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${activeTab === 'create-student' ? 'text-white' : 'text-[#888899] hover:text-white'
-              }`}
-          >
-            <UserPlus className="w-4 h-4 text-[#43e97b]" />
-            <span>Create Student Account</span>
-            {activeTab === 'create-student' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#43e97b]" />
-            )}
-          </button>
-        </div>
+    <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-[#888899] uppercase tracking-wider">Pipeline Volume</span>
+        <TrendingUp className="w-4 h-4 text-[#f59e0b]" />
+      </div>
+      <div className="font-syne text-2xl sm:text-3xl font-black text-[#02fd88]">
+        Rs. {registrations.reduce((acc, r) => acc + (Number(r.fee) || 0), 0).toLocaleString()}
+      </div>
+      <span className="text-[11px] text-[#888899]">Total tuition logged</span>
+    </div>
+  </div>
 
+  {/* Tabs */ }
+  <div className="flex items-center justify-between border-b border-[#2a2a3a] mb-6 overflow-x-auto">
+    <div className="flex items-center gap-6 shrink-0">
+      <button
+        onClick={() => setActiveTab('courses')}
+        className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === 'courses' ? 'text-white' : 'text-[#888899] hover:text-white'
+          }`}
+      >
+        <span>Courses Catalog ({courses.length})</span>
         {activeTab === 'courses' && (
-          <div className="relative min-w-[200px] sm:min-w-[260px] pb-2">
-            <Search className="w-3.5 h-3.5 text-[#888899] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search courses..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#1a1a26] border border-[#2a2a3a] rounded-xl text-white placeholder-[#888899] focus:outline-none focus:border-[#6c63ff]"
-            />
-          </div>
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6c63ff]" />
         )}
-      </div>
+      </button>
 
-      {/* TAB 1: COURSES CATALOG */}
-      {activeTab === 'courses' && (
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
+      <button
+        onClick={() => setActiveTab('registrations')}
+        className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === 'registrations' ? 'text-white' : 'text-[#888899] hover:text-white'
+          }`}
+      >
+        <span>Student Submissions ({registrations.length})</span>
+        {activeTab === 'registrations' && (
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6c63ff]" />
+        )}
+      </button>
+
+      {/* NEW TAB: CREATE STUDENT ACCOUNT */}
+      <button
+        onClick={() => setActiveTab('create-student')}
+        className={`pb-3 text-sm font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${activeTab === 'create-student' ? 'text-white' : 'text-[#888899] hover:text-white'
+          }`}
+      >
+        <UserPlus className="w-4 h-4 text-[#43e97b]" />
+        <span>Create Student Account</span>
+        {activeTab === 'create-student' && (
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#43e97b]" />
+        )}
+      </button>
+    </div>
+
+    {activeTab === 'courses' && (
+      <div className="relative min-w-[200px] sm:min-w-[260px] pb-2">
+        <Search className="w-3.5 h-3.5 text-[#888899] absolute left-3 top-2.5" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search courses..."
+          className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#1a1a26] border border-[#2a2a3a] rounded-xl text-white placeholder-[#888899] focus:outline-none focus:border-[#6c63ff]"
+        />
+      </div>
+    )}
+  </div>
+
+  {/* TAB 1: COURSES CATALOG */ }
+  {
+    activeTab === 'courses' && (
+      <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[#2a2a3a] bg-[#171724] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
+                <th className="py-4 px-4 sm:px-6">Course Name</th>
+                <th className="py-4 px-4">Category</th>
+                <th className="py-4 px-4">Duration & Schedule</th>
+                <th className="py-4 px-4">Current Fee (PKR)</th>
+                <th className="py-4 px-4">Badge</th>
+                <th className="py-4 px-4 sm:px-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#2a2a3a]/60 text-xs sm:text-sm">
+              {filteredCourses.map((course) => (
+                <tr key={course.id} className="hover:bg-[#181827] transition-colors">
+                  <td className="py-4 px-4 sm:px-6">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${course.accentColor}25`, color: course.accentColor }}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-syne font-bold text-white text-sm sm:text-base">
+                          {course.name}
+                        </div>
+                        <div className="text-[11px] text-[#888899] line-clamp-1 max-w-xs">
+                          {course.description}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+                      style={{ backgroundColor: `${course.accentColor}20`, color: course.accentColor }}
+                    >
+                      {course.categoryTag}
+                    </span>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap text-[#888899]">
+                    <div>{course.duration}</div>
+                    <div className="text-[11px] text-slate-500">{course.classesPerWeek}</div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="font-syne font-extrabold text-[#02fd88] text-base">
+                        Rs. {course.fee.toLocaleString()}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newFeeStr = prompt(`Update fee for ${course.name}:`, course.fee.toString());
+                          if (newFeeStr) {
+                            const parsed = parseInt(newFeeStr.replace(/[^0-9]/g, ''), 10);
+                            if (!isNaN(parsed) && parsed > 0) {
+                              updateCourseFee(course.id, parsed);
+                              showToast(`Fee for ${course.name} updated to Rs. ${parsed.toLocaleString()}!`);
+                            }
+                          }
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded bg-[#1a1a26] hover:bg-[#252538] text-[#818cf8] border border-[#2a2a3a] cursor-pointer"
+                      >
+                        Edit Rs
+                      </button>
+                    </div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    {course.badge ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#6c63ff]/20 text-[#818cf8] border border-[#6c63ff]/30">
+                        {course.badge}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-[#888899]">—</span>
+                    )}
+                  </td>
+
+                  <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleEditClick(course)}
+                        className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-white border border-[#2a2a3a] transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#818cf8]" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(course.id, course.name)}
+                        className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#ff6584]/20 text-[#ff6584] border border-[#2a2a3a] transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  {/* TAB 2: STUDENT SUBMISSIONS */ }
+  {
+    activeTab === 'registrations' && (
+      <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 shadow-xl">
+        {registrations.length === 0 ? (
+          <div className="text-center py-16">
+            <Users className="w-12 h-12 text-[#888899] mx-auto mb-3 opacity-50" />
+            <h3 className="font-syne text-lg font-bold text-white mb-1">No Registrations Yet</h3>
+            <p className="text-xs text-[#888899]">
+              When students fill out the enrollment form on the home page, their submissions will appear here.
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#2a2a3a] bg-[#171724] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
-                  <th className="py-4 px-4 sm:px-6">Course Name</th>
-                  <th className="py-4 px-4">Category</th>
-                  <th className="py-4 px-4">Duration & Schedule</th>
-                  <th className="py-4 px-4">Current Fee (PKR)</th>
-                  <th className="py-4 px-4">Badge</th>
-                  <th className="py-4 px-4 sm:px-6 text-right">Actions</th>
+                <tr className="border-b border-[#2a2a3a] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
+                  <th className="py-3 px-4">Student Name</th>
+                  <th className="py-3 px-4">Phone / WhatsApp</th>
+                  <th className="py-3 px-4">Enrolled Course</th>
+                  <th className="py-3 px-4">Fee Payable</th>
+                  <th className="py-3 px-4">City</th>
+                  <th className="py-3 px-4">Submission Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2a2a3a]/60 text-xs sm:text-sm">
-                {filteredCourses.map((course) => (
-                  <tr key={course.id} className="hover:bg-[#181827] transition-colors">
-                    <td className="py-4 px-4 sm:px-6">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${course.accentColor}25`, color: course.accentColor }}
-                        >
-                          <BookOpen className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="font-syne font-bold text-white text-sm sm:text-base">
-                            {course.name}
-                          </div>
-                          <div className="text-[11px] text-[#888899] line-clamp-1 max-w-xs">
-                            {course.description}
-                          </div>
-                        </div>
-                      </div>
+                {registrations.map((reg, idx) => (
+                  <tr key={reg.id || idx} className="hover:bg-[#181827]">
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      {reg.fullName}
                     </td>
-
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <span
-                        className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${course.accentColor}20`, color: course.accentColor }}
-                      >
-                        {course.categoryTag}
-                      </span>
+                    <td className="py-3.5 px-4 font-mono text-[#818cf8]">
+                      {reg.phone}
                     </td>
-
-                    <td className="py-4 px-4 whitespace-nowrap text-[#888899]">
-                      <div>{course.duration}</div>
-                      <div className="text-[11px] text-slate-500">{course.classesPerWeek}</div>
+                    <td className="py-3.5 px-4 text-white">
+                      {reg.courseName}
                     </td>
-
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-syne font-extrabold text-[#02fd88] text-base">
-                          Rs. {course.fee.toLocaleString()}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const newFeeStr = prompt(`Update fee for ${course.name}:`, course.fee.toString());
-                            if (newFeeStr) {
-                              const parsed = parseInt(newFeeStr.replace(/[^0-9]/g, ''), 10);
-                              if (!isNaN(parsed) && parsed > 0) {
-                                updateCourseFee(course.id, parsed);
-                                showToast(`Fee for ${course.name} updated to Rs. ${parsed.toLocaleString()}!`);
-                              }
-                            }
-                          }}
-                          className="text-[10px] px-2 py-0.5 rounded bg-[#1a1a26] hover:bg-[#252538] text-[#818cf8] border border-[#2a2a3a] cursor-pointer"
-                        >
-                          Edit Rs
-                        </button>
-                      </div>
+                    <td className="py-3.5 px-4 font-bold text-[#02fd88]">
+                      Rs. {Number(reg.fee || 0).toLocaleString()}
                     </td>
-
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      {course.badge ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#6c63ff]/20 text-[#818cf8] border border-[#6c63ff]/30">
-                          {course.badge}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-[#888899]">—</span>
-                      )}
+                    <td className="py-3.5 px-4 text-[#888899]">
+                      {reg.city || 'Karachi'}
                     </td>
-
-                    <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEditClick(course)}
-                          className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-white border border-[#2a2a3a] transition-colors cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-[#818cf8]" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(course.id, course.name)}
-                          className="p-2 rounded-xl bg-[#1a1a26] hover:bg-[#ff6584]/20 text-[#ff6584] border border-[#2a2a3a] transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <td className="py-3.5 px-4 text-slate-500 text-xs">
+                      {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : 'Recent'}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )
+  }
 
-      {/* TAB 2: STUDENT SUBMISSIONS */}
-      {activeTab === 'registrations' && (
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 shadow-xl">
-          {registrations.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="w-12 h-12 text-[#888899] mx-auto mb-3 opacity-50" />
-              <h3 className="font-syne text-lg font-bold text-white mb-1">No Registrations Yet</h3>
-              <p className="text-xs text-[#888899]">
-                When students fill out the enrollment form on the home page, their submissions will appear here.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#2a2a3a] text-[11px] font-bold text-[#888899] uppercase tracking-wider">
-                    <th className="py-3 px-4">Student Name</th>
-                    <th className="py-3 px-4">Phone / WhatsApp</th>
-                    <th className="py-3 px-4">Enrolled Course</th>
-                    <th className="py-3 px-4">Fee Payable</th>
-                    <th className="py-3 px-4">City</th>
-                    <th className="py-3 px-4">Submission Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#2a2a3a]/60 text-xs sm:text-sm">
-                  {registrations.map((reg, idx) => (
-                    <tr key={reg.id || idx} className="hover:bg-[#181827]">
-                      <td className="py-3.5 px-4 font-semibold text-white">
-                        {reg.fullName}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-[#818cf8]">
-                        {reg.phone}
-                      </td>
-                      <td className="py-3.5 px-4 text-white">
-                        {reg.courseName}
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-[#02fd88]">
-                        Rs. {Number(reg.fee || 0).toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-4 text-[#888899]">
-                        {reg.city || 'Karachi'}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-500 text-xs">
-                        {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : 'Recent'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+  {/* TAB 3: CREATE STUDENT ACCOUNT (NEW) */ }
+  {
+    activeTab === 'create-student' && (
+      <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-xl mx-auto shadow-xl">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2a2a3a]">
+          <div className="w-10 h-10 rounded-xl bg-[#43e97b]/15 text-[#43e97b] flex items-center justify-center shrink-0">
+            <UserPlus className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="font-syne text-xl font-bold text-white">Issue Student Credentials</h2>
+            <p className="text-xs text-[#888899]">
+              Create student account directly. Email verification link will be sent automatically.
+            </p>
+          </div>
         </div>
-      )}
 
-      {/* TAB 3: CREATE STUDENT ACCOUNT (NEW) */}
-      {activeTab === 'create-student' && (
-        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-xl mx-auto shadow-xl">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#2a2a3a]">
-            <div className="w-10 h-10 rounded-xl bg-[#43e97b]/15 text-[#43e97b] flex items-center justify-center shrink-0">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-syne text-xl font-bold text-white">Issue Student Credentials</h2>
-              <p className="text-xs text-[#888899]">
-                Create student account directly. Email verification link will be sent automatically.
-              </p>
+        {studentSuccessMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{studentSuccessMsg}</span>
+          </div>
+        )}
+
+        {studentErrorMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{studentErrorMsg}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleCreateStudent} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#888899] mb-1">
+              Student Full Name
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="e.g. Muhammad Hassan"
+                required
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#43e97b]"
+              />
+              <UserCheck className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
-          {studentSuccessMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{studentSuccessMsg}</span>
-            </div>
-          )}
-
-          {studentErrorMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{studentErrorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleCreateStudent} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-[#888899] mb-1">
-                Student Full Name
+                Official Email Address *
               </label>
               <div className="relative">
                 <input
-                  type="text"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                  placeholder="e.g. Muhammad Hassan"
+                  type="email"
+                  value={studentEmail}
+                  onChange={(e) => setStudentEmail(e.target.value)}
+                  placeholder="student@example.com"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#43e97b]"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
                 />
-                <UserCheck className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#888899] mb-1">
+                Phone / WhatsApp
+              </label>
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={studentPhone}
+                  onChange={(e) => setStudentPhone(e.target.value)}
+                  placeholder="0319-XXXXXXX"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
+                />
+                <Phone className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#888899] mb-1">
+              Assign Initial Password *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={studentPassword}
+                onChange={(e) => setStudentPassword(e.target.value)}
+                placeholder="e.g. Student123#"
+                required
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm font-mono focus:outline-none focus:border-[#43e97b]"
+              />
+              <Lock className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-[11px] text-[#888899] mt-1">
+              Provide this password to student. Student will verify email link before first login.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={creatingStudent}
+            className="w-full py-3 rounded-xl bg-[#43e97b] hover:bg-[#32d86a] text-black font-bold text-sm transition-all shadow-xl shadow-[#43e97b]/20 cursor-pointer flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>{creatingStudent ? 'Creating Account...' : 'Register Student & Send Verification Link'}</span>
+          </button>
+        </form>
+      </div>
+    )
+  }
+
+  {/* EDIT / CREATE COURSE MODAL */ }
+  {
+    (editingCourse || isAddingNew) && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="bg-[#13131e] border border-[#2a2a3a] rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#2a2a3a]">
+            <div>
+              <h3 className="font-syne text-xl font-bold text-white">
+                {isAddingNew ? 'Add New Course' : `Edit: ${editingCourse?.name}`}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingCourse(null);
+                setIsAddingNew(false);
+              }}
+              className="p-2 rounded-xl bg-[#1a1a26] text-[#888899] hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveCourse} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
+                Course Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Artificial Intelligence & Python"
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#888899] mb-1">
-                  Official Email Address *
+                <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
+                  Course Fee (PKR) *
                 </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={studentEmail}
-                    onChange={(e) => setStudentEmail(e.target.value)}
-                    placeholder="student@example.com"
-                    required
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
-                  />
-                  <Mail className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
+                <input
+                  type="number"
+                  value={formData.fee || ''}
+                  onChange={(e) => setFormData({ ...formData, fee: Number(e.target.value) })}
+                  placeholder="8000"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white font-mono text-sm focus:outline-none focus:border-[#6c63ff]"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#888899] mb-1">
-                  Phone / WhatsApp
+                <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
+                  Category Tag *
                 </label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    value={studentPhone}
-                    onChange={(e) => setStudentPhone(e.target.value)}
-                    placeholder="0319-XXXXXXX"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs sm:text-sm focus:outline-none focus:border-[#43e97b]"
-                  />
-                  <Phone className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#888899] mb-1">
-                Assign Initial Password *
-              </label>
-              <div className="relative">
                 <input
                   type="text"
-                  value={studentPassword}
-                  onChange={(e) => setStudentPassword(e.target.value)}
-                  placeholder="e.g. Student123#"
+                  value={formData.categoryTag || ''}
+                  onChange={(e) => setFormData({ ...formData, categoryTag: e.target.value })}
+                  placeholder="e.g. Web Development"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm font-mono focus:outline-none focus:border-[#43e97b]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
                 />
-                <Lock className="w-4 h-4 text-[#888899] absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
-              <p className="text-[11px] text-[#888899] mt-1">
-                Provide this password to student. Student will verify email link before first login.
-              </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={creatingStudent}
-              className="w-full py-3 rounded-xl bg-[#43e97b] hover:bg-[#32d86a] text-black font-bold text-sm transition-all shadow-xl shadow-[#43e97b]/20 cursor-pointer flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>{creatingStudent ? 'Creating Account...' : 'Register Student & Send Verification Link'}</span>
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* EDIT / CREATE COURSE MODAL */}
-      {(editingCourse || isAddingNew) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#13131e] border border-[#2a2a3a] rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#2a2a3a]">
-              <div>
-                <h3 className="font-syne text-xl font-bold text-white">
-                  {isAddingNew ? 'Add New Course' : `Edit: ${editingCourse?.name}`}
-                </h3>
-              </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2a2a3a]">
               <button
                 type="button"
                 onClick={() => {
                   setEditingCourse(null);
                   setIsAddingNew(false);
                 }}
-                className="p-2 rounded-xl bg-[#1a1a26] text-[#888899] hover:text-white transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-[#888899] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white text-xs font-bold transition-all shadow-lg shadow-[#6c63ff]/25 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isAddingNew ? 'Create Course' : 'Save Changes'}</span>
               </button>
             </div>
-
-            <form onSubmit={handleSaveCourse} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                  Course Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name || ''}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Artificial Intelligence & Python"
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Course Fee (PKR) *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.fee || ''}
-                    onChange={(e) => setFormData({ ...formData, fee: Number(e.target.value) })}
-                    placeholder="8000"
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white font-mono text-sm focus:outline-none focus:border-[#6c63ff]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#888899] uppercase tracking-wider mb-1">
-                    Category Tag *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.categoryTag || ''}
-                    onChange={(e) => setFormData({ ...formData, categoryTag: e.target.value })}
-                    placeholder="e.g. Web Development"
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6c63ff]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2a2a3a]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingCourse(null);
-                    setIsAddingNew(false);
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-[#1a1a26] hover:bg-[#252538] text-[#888899] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white text-xs font-bold transition-all shadow-lg shadow-[#6c63ff]/25 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{isAddingNew ? 'Create Course' : 'Save Changes'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-      )}
-    </div>
+      </div>
+    )
+  }
+    </div >
   );
 }
 
