@@ -15,7 +15,7 @@ import {
   LogOut,
   Settings,
   SlidersHorizontal,
-  UserPlus
+  BookOpen
 } from 'lucide-react';
 import { ACADEMY_INFO } from '../data/courses';
 import { useAuth } from '../context/AuthContext';
@@ -170,6 +170,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
             </Link>
           )}
 
+          {/* Student Portal Button - ONLY visible when Student is logged in */}
+          {user && !isAdmin && (
+            <Link
+              href="/portal"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${pathname === '/portal'
+                ? 'bg-[#43e97b] text-black font-bold shadow-md shadow-[#43e97b]/30'
+                : 'bg-[#43e97b]/20 text-[#02fd88] border border-[#43e97b]/30 hover:bg-[#43e97b] hover:text-black'
+                }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Student Portal</span>
+            </Link>
+          )}
+
           {/* Auth Controls */}
           {user ? (
             <div className="flex items-center gap-2">
@@ -186,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
               </div>
               <button
                 onClick={logout}
-                className="p-1.5 rounded-lg text-[#888899] hover:text-white hover:bg-[#1a1a26] transition-colors"
+                className="p-1.5 rounded-lg text-[#888899] hover:text-white hover:bg-[#1a1a26] transition-colors cursor-pointer"
                 title="Log Out"
               >
                 <LogOut className="w-4 h-4" />
@@ -276,13 +290,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
           >
             <span>About Us</span>
           </Link>
-          <Link
-            href="/#register"
-            onClick={() => setMobileMenuOpen(false)}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-left text-sm font-medium text-[#888899] hover:bg-[#1a1a26] hover:text-white"
-          >
-            <span>Register Form</span>
-          </Link>
+
+          {/* Student Portal in Mobile - ONLY visible to Student */}
+          {user && !isAdmin && (
+            <Link
+              href="/portal"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-left text-sm font-medium ${pathname === '/portal' ? 'bg-[#43e97b]/20 text-white' : 'text-[#888899] hover:bg-[#1a1a26] hover:text-white'
+                }`}
+            >
+              <span className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-[#43e97b]" />
+                <span>Student Portal (Notes & Resources)</span>
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#43e97b]/30 text-[#02fd88] font-bold">
+                Access
+              </span>
+            </Link>
+          )}
 
           {/* Admin Panel in Mobile - ONLY visible to Admin */}
           {isAdmin && (
@@ -326,22 +351,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 my-2">
+              <div className="my-2">
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1a1a26] border border-[#2a2a3a] text-white text-xs font-semibold"
-                >
-                  <LogIn className="w-3.5 h-3.5 text-[#6c63ff]" />
-                  <span>Log In</span>
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#6c63ff] text-white text-xs font-semibold"
                 >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Sign Up</span>
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Log In to Student Portal</span>
                 </Link>
               </div>
             )}
@@ -356,13 +373,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateSection, activeSection
             >
               <MessageSquare className="w-4 h-4" />
               <span>WhatsApp Admission Desk (0319-8647809)</span>
-            </a>
-            <a
-              href={`tel:${ACADEMY_INFO.phoneInternational}`}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1a1a26] text-white border border-[#2a2a3a] text-xs font-semibold"
-            >
-              <Phone className="w-4 h-4 text-[#6c63ff]" />
-              <span>Direct Call Institute</span>
             </a>
           </div>
         </div>

@@ -11,9 +11,9 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
@@ -32,66 +32,93 @@ function LoginContent() {
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
-  e.preventDefault();
-  setError(null);
+    e.preventDefault();
+    setError(null);
 
-  const trimmedIdentifier = email.trim();
+    const trimmedIdentifier = email.trim().toLowerCase();
 
-  if (!trimmedIdentifier) {
-    setError('Please enter your email ID.');
-    return;
-  }
-
-  if (role === 'admin') {
-    // Admin Login Logic
-    const isValidAdminUser =
-      trimmedIdentifier === 'Zayan' ||
-      trimmedIdentifier.toLowerCase() === 'cybernova@gmail.com';
-    const isValidAdminPass = password === 'admin123';
-
-    if (!isValidAdminUser || !isValidAdminPass) {
-      setError('Invalid Admin credentials.');
+    if (!trimmedIdentifier) {
+      setError('Please enter your email address.');
       return;
     }
 
-    login('admin@cybernova.edu.pk', 'admin', 'Academy Admin');
-    setSuccess(true);
-    setTimeout(() => router.push('/admin'), 600);
-
-  } else {
-    // Student Login via Firebase Auth (Direct Check)
     try {
       setLoading(true);
 
-      // Direct Firebase Authentication
+      // 1. Firebase Authentication SDK
       const userCredential = await signInWithEmailAndPassword(auth, trimmedIdentifier, password);
       const user = userCredential.user;
 
-      // Login Context update karke direct Student Portal par redirect
-      login(user.email || trimmedIdentifier, 'student');
+      let userRole: 'student' | 'admin' = role;
+      let displayName = user.email || trimmedIdentifier;
+
+      // 2. Step A: Search Firestore by User UID
+      try {
+        const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          displayName = userData.name || displayName;
+          if (userData.role) {
+            userRole = userData.role;
+          }
+        } else {
+          // Step B: Fallback - Search Firestore by Email (Agar UID match na ho rhi ho)
+          const q = query(collection(db, 'users'), where('email', '==', trimmedIdentifier));
+          const querySnap = await getDocs(q);
+          if (!querySnap.empty) {
+            const userData = querySnap.docs[0].data();
+            displayName = userData.name || displayName;
+            if (userData.role) {
+              userRole = userData.role;
+            }
+          }
+        }
+      } catch (firestoreErr) {
+        console.warn('Firestore fetch skipped or offline:', firestoreErr);
+      }
+
+      // Hardcode Safety Check for your primary admin email
+      if (trimmedIdentifier === 'cybernova@gmail.com') {
+        userRole = 'admin';
+      }
+
+      // 3. Update Global Auth Context
+      login(displayName, userRole);
       setSuccess(true);
 
+      // 4. Role-based Navigation Redirect
       setTimeout(() => {
-        router.push(redirectPath || '/'); // Direct Access
+        if (userRole === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push(redirectPath === '/' ? '/portal' : redirectPath);
+        }
       }, 600);
 
     } catch (err: any) {
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Invalid Student Email or Password.');
+      if (
+        err.code === 'auth/invalid-credential' ||
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password'
+      ) {
+        setError('Invalid Email or Password. Please check your credentials.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address format.');
       } else {
-        setError('Login failed: ' + err.message);
+        setError('Login failed: ' + (err.message || 'Authentication error'));
       }
     } finally {
       setLoading(false);
     }
-  }
-};
+  };
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-md mx-auto">
       <div className="bg-[#13131e] border border-[#2a2a3a] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        {/* Ambient Top Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-[#6c63ff]/20 blur-3xl pointer-events-none" />
 
+        {/* Header */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#6c63ff] via-[#818cf8] to-[#43e97b] p-0.5 mx-auto mb-3 shadow-lg shadow-[#6c63ff]/20">
             <div className="w-full h-full bg-[#111118] rounded-[14px] flex items-center justify-center">
@@ -106,6 +133,7 @@ function LoginContent() {
           </p>
         </div>
 
+        {/* Success Alert */}
         {success && (
           <div className="mb-4 p-3 rounded-xl bg-[#00a651]/15 border border-[#00a651]/40 text-[#02fd88] text-xs font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -113,6 +141,7 @@ function LoginContent() {
           </div>
         )}
 
+        {/* Error Alert */}
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-[#ff6584]/15 border border-[#ff6584]/40 text-[#ff6584] text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -120,29 +149,33 @@ function LoginContent() {
           </div>
         )}
 
+        {/* Role Selector Tabs */}
         <div className="grid grid-cols-2 gap-2 p-1 bg-[#1a1a26] rounded-xl border border-[#2a2a3a] mb-5">
           <button
             type="button"
             onClick={() => setRole('student')}
-            className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${role === 'student'
+            className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              role === 'student'
                 ? 'bg-[#6c63ff] text-white shadow-md'
                 : 'text-[#888899] hover:text-white'
-              }`}
+            }`}
           >
             Student Account
           </button>
           <button
             type="button"
             onClick={() => setRole('admin')}
-            className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${role === 'admin'
+            className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              role === 'admin'
                 ? 'bg-[#6c63ff] text-white shadow-md'
                 : 'text-[#888899] hover:text-white'
-              }`}
+            }`}
           >
             Academy Admin
           </button>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-[#888899] mb-1.5">
@@ -178,30 +211,21 @@ function LoginContent() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs pt-1">
-            <label className="flex items-center gap-2 text-[#888899] cursor-pointer">
-              <input type="checkbox" defaultChecked className="rounded bg-[#1a1a26] border-[#2a2a3a] text-[#6c63ff]" />
-              <span>Remember me</span>
-            </label>
-            <span className="text-[#818cf8] hover:underline cursor-pointer">Forgot password?</span>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white font-bold text-sm transition-all shadow-xl shadow-[#6c63ff]/30 hover:shadow-[#6c63ff]/50 cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
           >
-            <span>{loading ? 'Logging in...' : role === 'admin' ? 'Log In as Administrator' : 'Log In to Student Portal'}</span>
+            <span>
+              {loading
+                ? 'Authenticating...'
+                : role === 'admin'
+                ? 'Log In as Administrator'
+                : 'Log In to Student Portal'}
+            </span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        <div className="mt-6 text-center text-xs text-[#888899]">
-          Don't have an account?{' '}
-          <Link href="/signup" className="text-[#818cf8] font-semibold hover:underline">
-            Sign up here
-          </Link>
-        </div>
       </div>
     </div>
   );
